@@ -205,6 +205,11 @@ public class Engine {
     public static void main(String[] args) throws Exception {
         int exitCode = 0;
         try {
+
+           /* System.setProperty("datax.home","C:\\Users\\towatt\\Desktop\\tmp\\datax");
+            Configuration configuration = ConfigParser.parse("C:\\Users\\towatt\\Desktop\\my2text.json");
+            System.out.println(configuration.get("job.content[0].reader.parameter.connection[0].table"));*/
+
             Engine.entry(args);
         } catch (Throwable e) {
             exitCode = 1;

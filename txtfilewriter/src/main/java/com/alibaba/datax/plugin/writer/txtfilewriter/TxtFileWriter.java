@@ -4,8 +4,12 @@ import com.alibaba.datax.common.exception.DataXException;
 import com.alibaba.datax.common.plugin.RecordReceiver;
 import com.alibaba.datax.common.spi.Writer;
 import com.alibaba.datax.common.util.Configuration;
+import com.alibaba.datax.plugin.unstructuredstorage.reader.UnstructuredStorageReaderUtil;
+import com.alibaba.datax.plugin.unstructuredstorage.writer.Constant;
 import com.alibaba.datax.plugin.unstructuredstorage.writer.UnstructuredStorageWriterUtil;
 
+import com.alibaba.fastjson.JSON;
+import com.csvreader.CsvReader;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.PrefixFileFilter;
@@ -13,11 +17,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -29,6 +29,10 @@ import java.util.UUID;
  * Created by haiwei.luo on 14-9-17.
  */
 public class TxtFileWriter extends Writer {
+
+    static String mergeFilemyKey = "mergeFile";
+
+
     public static class Job extends Writer.Job {
         private static final Logger LOG = LoggerFactory.getLogger(Job.class);
 
@@ -200,6 +204,56 @@ public class TxtFileWriter extends Writer {
 
         @Override
         public void post() {
+            //  多个文件合并
+            // 获取多个文件目录
+            String path = this.writerSliceConfig.getString(Key.PATH);
+            String fileName = this.writerSliceConfig.getString(com.alibaba.datax.plugin.unstructuredstorage.writer.Key.FILE_NAME);
+            Configuration pluginJobConf = this.getPluginJobConf();
+            //mergeFilemy
+            Boolean mergeFilemy = pluginJobConf.getBool(TxtFileWriter.mergeFilemyKey, false);
+            //LOG.info(String.format("pluginJobConf file [%s]. , mergeFilemy:[%s]", JSON.toJSON(pluginJobConf).toString(), mergeFilemy));
+            // 增加合并逻辑合并文件
+
+            if (!mergeFilemy) return;
+            //LOG.info(String.format("pluginJobConf file [%s].", JSON.toJSON(pluginJobConf).toString()));
+            // truncate option handler
+            File dir = new File(path);
+            File mergeFile = new File(dir, fileName);
+            // warn:需要判断文件是否存在，不存在时，不能删除
+            try {
+                if (mergeFile.exists()) FileUtils.forceDelete(mergeFile);
+                if (dir.exists()) {
+                    // warn:不要使用FileUtils.deleteQuietly(dir);
+
+                    FilenameFilter filter = new PrefixFileFilter(fileName);
+                    File[] filesWithFileNamePrefix = dir.listFiles(filter);
+                    for (File eachFile : filesWithFileNamePrefix) {
+                        LOG.info(String.format("合并文件 file [%s].    dist[%s]", eachFile.getName(), mergeFile.getName()));
+                        List<String> lines = FileUtils.readLines(eachFile, Constant.DEFAULT_ENCODING);
+                        FileUtils.writeLines(mergeFile, lines, true);
+                        LOG.info(String.format("delete file [%s].", eachFile.getName()));
+                        FileUtils.forceDelete(eachFile);
+                    }
+                }
+            } catch (NullPointerException npe) {
+                throw DataXException
+                        .asDataXException(
+                                TxtFileWriterErrorCode.Write_FILE_ERROR,
+                                String.format("您配置的目录清空时出现空指针异常 : [%s]",
+                                        path), npe);
+            } catch (IllegalArgumentException iae) {
+                throw DataXException.asDataXException(
+                        TxtFileWriterErrorCode.SECURITY_NOT_ENOUGH,
+                        String.format("您配置的目录参数异常 : [%s]", path));
+            } catch (SecurityException se) {
+                throw DataXException.asDataXException(
+                        TxtFileWriterErrorCode.SECURITY_NOT_ENOUGH,
+                        String.format("您没有权限查看目录 : [%s]", path));
+            } catch (Exception e) {
+                throw DataXException.asDataXException(
+                        TxtFileWriterErrorCode.Write_FILE_ERROR,
+                        String.format("无法清空目录 : [%s]", path), e);
+            }
 
         }
 
@@ -312,16 +366,16 @@ public class TxtFileWriter extends Writer {
         private String buildFilePath() {
             boolean isEndWithSeparator = false;
             switch (IOUtils.DIR_SEPARATOR) {
-            case IOUtils.DIR_SEPARATOR_UNIX:
-                isEndWithSeparator = this.path.endsWith(String
-                        .valueOf(IOUtils.DIR_SEPARATOR));
-                break;
-            case IOUtils.DIR_SEPARATOR_WINDOWS:
-                isEndWithSeparator = this.path.endsWith(String
-                        .valueOf(IOUtils.DIR_SEPARATOR_WINDOWS));
-                break;
-            default:
-                break;
+                case IOUtils.DIR_SEPARATOR_UNIX:
+                    isEndWithSeparator = this.path.endsWith(String
+                            .valueOf(IOUtils.DIR_SEPARATOR));
+                    break;
+                case IOUtils.DIR_SEPARATOR_WINDOWS:
+                    isEndWithSeparator = this.path.endsWith(String
+                            .valueOf(IOUtils.DIR_SEPARATOR_WINDOWS));
+                    break;
+                default:
+                    break;
             }
             if (!isEndWithSeparator) {
                 this.path = this.path + IOUtils.DIR_SEPARATOR;
@@ -332,7 +386,9 @@ public class TxtFileWriter extends Writer {
         @Override
         public void post() {
 
+
         }
+
 
         @Override
         public void destroy() {
