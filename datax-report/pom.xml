@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.datax</groupId>
+    <artifactId>datax-report</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <properties>
+        <datax-project-version>0.0.1-SNAPSHOT</datax-project-version>
+    </properties>
+    <dependencies>
+        <!--        maven仓库没有datax-common的jar包，需要本地构建-->
+        <dependency>
+            <groupId>com.alibaba.datax</groupId>
+            <artifactId>datax-common</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+           <!-- <scope>provided</scope>-->
+        </dependency>
+     <!--   <dependency>
+            <groupId>com.alibaba.datax</groupId>
+            <artifactId>plugin-unstructured-storage-util</artifactId>
+            <version>${datax-project-version}</version>
+        </dependency>-->
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <!--微服务模式下修改为true,跳过此打包插件，否则微服务模块无法引用-->
+                    <skip>false</skip>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+            <!-- 打包跳过测试 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <skipTests>true</skipTests>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
