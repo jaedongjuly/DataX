@@ -39,7 +39,7 @@ public class UnstructuredStorageWriterUtil {
 
     /**
      * check parameter: writeMode, encoding, compress, filedDelimiter
-     * */
+     */
     public static void validateParameter(Configuration writerConfiguration) {
         // writeMode check
         String writeMode = writerConfiguration.getNecessaryValue(
@@ -208,7 +208,7 @@ public class UnstructuredStorageWriterUtil {
                             UnstructuredStorageWriterErrorCode.Write_FILE_WITH_CHARSET_ERROR, uee);
         } catch (NullPointerException e) {
             throw DataXException.asDataXException(
-                    UnstructuredStorageWriterErrorCode.RUNTIME_EXCEPTION,e);
+                    UnstructuredStorageWriterErrorCode.RUNTIME_EXCEPTION, e);
         } catch (IOException e) {
             throw DataXException.asDataXException(
                     UnstructuredStorageWriterErrorCode.Write_FILE_IO_ERROR, e);
@@ -252,7 +252,7 @@ public class UnstructuredStorageWriterUtil {
         // IOUtils.closeQuietly(unstructuredWriter);
     }
 
-    public static UnstructuredWriter produceUnstructuredWriter(String fileFormat, Configuration config, Writer writer){
+    public static UnstructuredWriter produceUnstructuredWriter(String fileFormat, Configuration config, Writer writer) {
         UnstructuredWriter unstructuredWriter = null;
         if (StringUtils.equalsIgnoreCase(fileFormat, Constant.FILE_FORMAT_CSV)) {
 
@@ -269,7 +269,7 @@ public class UnstructuredStorageWriterUtil {
 
     /**
      * 异常表示脏数据
-     * */
+     */
     public static void transportOneRecord(Record record, String nullFormat,
                                           DateFormat dateParse, TaskPluginCollector taskPluginCollector,
                                           UnstructuredWriter unstructuredWriter, String byteEncoding) {
@@ -294,7 +294,12 @@ public class UnstructuredStorageWriterUtil {
                                     splitedRows.add(column.asString());
                                 }
                             } else {
-                                splitedRows.add(column.asString());
+                                // con str 去除无效换行符号 郭杰
+                                String costr = column.asString();
+                                if (costr != null) {
+                                    costr = costr.replaceAll("\\\r\n|\\\r|\\\n", "");
+                                }
+                                splitedRows.add(costr);
                             }
                         } else {
                             if (null != dateParse) {
@@ -311,17 +316,17 @@ public class UnstructuredStorageWriterUtil {
                 }
             }
             unstructuredWriter.writeOneRecord(splitedRows);
-        } catch (IllegalArgumentException e){
+        } catch (IllegalArgumentException e) {
             // warn: dirty data
             taskPluginCollector.collectDirtyRecord(record, e);
-        } catch (DataXException e){
+        } catch (DataXException e) {
             // warn: dirty data
             taskPluginCollector.collectDirtyRecord(record, e);
         } catch (Exception e) {
             // throw exception, it is not dirty data,
             // may be network unreachable and the other problem
             throw DataXException.asDataXException(
-                    UnstructuredStorageWriterErrorCode.Write_ERROR, e.getMessage(),e);
+                    UnstructuredStorageWriterErrorCode.Write_ERROR, e.getMessage(), e);
         }
     }
 
