@@ -218,7 +218,7 @@
         <repository>
             <id>central</id>
             <name>Nexus aliyun</name>
-            <url>https://maven.aliyun.com/repository/central</url>
+            <url>https://maven.aliyun.com/repository/spring</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
