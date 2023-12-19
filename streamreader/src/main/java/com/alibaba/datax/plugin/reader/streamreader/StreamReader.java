@@ -56,8 +56,12 @@ public class StreamReader extends Reader {
 				throw DataXException.asDataXException(StreamReaderErrorCode.REQUIRED_VALUE,
 						"没有设置参数[column].");
 			}
-
+			System.out.println("11111111111111111111111111111111111111111111111111111111111111111111111111");
 			List<String> dealedColumns = new ArrayList<String>();
+			System.out.println(columns);
+			for (JSONObject column : columns) {
+				System.out.println(column);
+			}
 			for (JSONObject eachColumn : columns) {
 				Configuration eachColumnConfig = Configuration.from(eachColumn);
 				try {
